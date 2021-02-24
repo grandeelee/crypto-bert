@@ -22,6 +22,8 @@ batch_size = arg.batch_size
 n_expt = arg.n_expt
 
 # make folder to store the model
+if not os.path.exists("war_and_peace_expt"):
+    os.makedirs("war_and_peace_expt")
 save_path = "war_and_peace_expt/l{}_c{}".format(num_layer, context_length)
 if not os.path.exists(save_path):
     os.makedirs(save_path)

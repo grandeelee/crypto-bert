@@ -61,7 +61,7 @@ criterion = torch.nn.NLLLoss()
 device = 'cpu'
 if torch.cuda.is_available():
     device = torch.cuda.current_device()
-    model = torch.nn.DataParallel(model).to(device)
+    model = model.to(device)
 
 
 # %%
@@ -78,15 +78,14 @@ def repackage_hidden(h):
 # Turn on training mode which enables dropout.
 
 def train(model, optimizer):
-    model.train()
-    hidden = model.init_hidden(batch_size)
-    loader = DataLoader(train_dataset, shuffle=True, pin_memory=True,
-                        batch_size=batch_size,
-                        num_workers=4)
-    pbar = tqdm(enumerate(loader), total=len(loader))
-
-    tokens = 0
     for epoch in range(tconf.max_epochs):
+        tokens = 0
+        model.train()
+        hidden = model.init_hidden(batch_size)
+        loader = DataLoader(train_dataset, shuffle=True, pin_memory=True,
+                            batch_size=batch_size,
+                            num_workers=4, drop_last=True)
+        pbar = tqdm(enumerate(loader), total=len(loader))
         for it, (x, y) in pbar:
             # place data on the correct device
             x = x.to(device).permute(1, 0)
@@ -118,7 +117,11 @@ def train(model, optimizer):
 
 
 train(model, optimizer)
-# %%
+if tconf.ckpt_path is not None:
+    raw_model = model.module if hasattr(model, "module") else model
+    logger.info("saving %s", tconf.ckpt_path)
+    torch.save(raw_model.state_dict(), tconf.ckpt_path)
+
 char_emb = model.encoder.weight.data
 emb = char_emb.to('cpu').numpy()
 emb /= np.linalg.norm(emb, axis=1, keepdims=True)
@@ -141,6 +144,11 @@ for i in range(n_expt):
     params = [p for pn, p in model.named_parameters() if p.requires_grad]
     optimizer = torch.optim.Adam(params, lr=tconf.learning_rate, betas=tconf.betas)
     train(model, optimizer)
+    if tconf.ckpt_path is not None:
+        raw_model = model.module if hasattr(model, "module") else model
+        logger.info("saving %s", tconf.ckpt_path)
+        torch.save(raw_model.state_dict(), tconf.ckpt_path)
+        
     #  store the embedding
     char_emb_p = model.encoder.weight.data
     emb_p = char_emb_p.to('cpu').numpy()
