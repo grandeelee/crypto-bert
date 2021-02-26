@@ -56,7 +56,7 @@ tconf = TrainerConfig(max_epochs=2, batch_size=batch_size, learning_rate=6e-4,
                       lr_decay=True, warmup_tokens=512 * 20,
                       final_tokens=2 * len(train_dataset) * context_length,
                       num_workers=4)
-optimizer = torch.optim.Adam(params, lr=tconf.learning_rate, betas=tconf.betas)
+optimizer = torch.optim.SGD(params, lr=5)
 criterion = torch.nn.NLLLoss()
 device = 'cpu'
 if torch.cuda.is_available():
@@ -88,8 +88,8 @@ def train(model, optimizer):
         pbar = tqdm(enumerate(loader), total=len(loader))
         for it, (x, y) in pbar:
             # place data on the correct device
-            x = x.to(device).permute(1, 0)
-            y = y.to(device).permute(1, 0).reshape(-1)
+            x = x.to(device)
+            y = y.to(device).reshape(-1)
             # Starting each batch, we detach the hidden state from how it was previously produced.
             # If we didn't, the model would try backpropagating all the way to start of the dataset.
             model.zero_grad()
@@ -142,7 +142,7 @@ for i in range(n_expt):
         if "encoder" not in pn:
             p.requires_grad = False
     params = [p for pn, p in model.named_parameters() if p.requires_grad]
-    optimizer = torch.optim.Adam(params, lr=tconf.learning_rate, betas=tconf.betas)
+    optimizer = torch.optim.SGD(params, lr=5)
     train(model, optimizer)
     if tconf.ckpt_path is not None:
         raw_model = model.module if hasattr(model, "module") else model

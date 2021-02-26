@@ -339,7 +339,7 @@ class RNNModel(nn.Module):
         self.drop = nn.Dropout(dropout)
         self.encoder = nn.Embedding(ntoken, ninp)
         if rnn_type in ['LSTM', 'GRU']:
-            self.rnn = getattr(nn, rnn_type)(ninp, nhid, nlayers, dropout=dropout)
+            self.rnn = getattr(nn, rnn_type)(ninp, nhid, nlayers, dropout=dropout, batch_first=True)
         else:
             try:
                 nonlinearity = {'RNN_TANH': 'tanh', 'RNN_RELU': 'relu'}[rnn_type]
